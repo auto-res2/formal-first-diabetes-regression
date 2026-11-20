@@ -1,0 +1,68 @@
+\documentclass[9pt,a4paper,twocolumn]{ltjsarticle}
+\usepackage[top=20mm,bottom=22mm,left=17mm,right=17mm,columnsep=8mm]{geometry}
+\usepackage{amsmath}
+\usepackage[hidelinks]{hyperref}
+\input{values.tex}
+% 各文の元になった claims の ID。スキーマ（claims.json、commit b21140a）の、その claim の行へリンクする
+\newcommand{\schemaurl}{https://github.com/auto-res2/formal-first-diabetes-regression/blob/b21140a/formal/claims.json}
+\newcommand{\cid}[1]{\textsuperscript{\textsf{\scriptsize[\href{\schemaurl\#L\csname line#1\endcsname}{#1}]}}}
+% 検証された値。スキーマの、その値の行へリンクする
+\newcommand{\val}[1]{\textsuperscript{\textsf{\scriptsize[\href{\schemaurl\#L\csname line#1\endcsname}{値}]}}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\begin{document}
+
+\twocolumn[{
+\begin{center}
+{\Large\bfseries 糖尿病データセットに対する線形回帰のテスト MSE と\\しきい値 3400 の比較}\\[2mm]
+{\normalsize auto-res2}
+\end{center}
+\vspace{3mm}
+}]
+
+\section{主張}
+
+実験の前に，次の主張を宣言した．\cid{C01}糖尿病データセットの訓練データに \code{sklearn.linear\_model.LinearRegression} を当てはめ，テストデータを予測し，\code{sklearn.metrics.mean\_squared\_error} で計算した値は，3400 を下回る．検証の結果，この主張は偽であった（\ref{sec:result} 節）．
+
+\section{実験設定}
+
+\paragraph{データセット}
+\cid{C08}Efron ら~\cite{efron} が用いた糖尿病データセットを使用した．このデータセットは，配布元の URL\footnote{\url{https://www4.stat.ncsu.edu/~boos/var.select/diabetes.tab.txt}}から取得したファイルであるとした．
+\cid{C11}\cid{C12}実験の前に宣言した SHA-256 は，実行が読んだファイルの SHA-256 とも，配布元の URL から取得したファイルの SHA-256 とも一致した．\cid{C13}したがって，実行が読んだファイルは，Efron らが用いたデータセットである．
+\cid{C14}\cid{C15}データは \NSamples{} 行で，説明変数は \NFeatures{} 個である．\cid{C16}\cid{C17}説明変数の列は AGE，SEX，BMI，BP，S1〜S6，目的変数の列は Y である．
+
+\paragraph{分割}
+\cid{C07}\cid{C18}\cid{C19}\cid{C20}テストデータの行は，\code{sklearn.model\_selection.train\_test\_split} を，乱数のシード 0，テストデータの割合 1/5 で呼んで決めた．\cid{C21}テストデータは \NTest{} 件である．\cid{C06}\cid{C22}残りの \NTrain{} 件を訓練データとした．両者は重ならず，合わせると全 \NSamples{} 件になる．
+
+\paragraph{当てはめ，予測，評価}
+\cid{C05}\cid{C23}訓練データの説明変数と目的変数に \code{LinearRegression.fit} を適用して，モデルを当てはめた．\cid{C26}\cid{C27}説明変数は \NFeatures{} 個すべてを，加工せずに用いた．\cid{C28}当てはめに渡したのは訓練データである．
+\cid{C04}\cid{C24}予測値は，当てはめたモデルと各行の説明変数に \code{LinearRegression.predict} を適用して求めた．
+\cid{C03}\cid{C25}主張で比べる量は，テストデータの目的変数と予測値に \code{mean\_squared\_error} を適用した値である．
+
+\paragraph{ライブラリと実行環境}
+\cid{C29}\cid{C30}\cid{C31}scikit-learn 1.7.2，NumPy 2.3.4，Python 3.13.3 を用いた．\cid{C32}\cid{C33}実験は GitHub Actions の runner（ubuntu-24.04，x86\_64）で実行した．割り当てられた計算機の CPU は \CpuModel\val{cpuModel}，メモリは \MemoryGib{} GiB\val{memoryGib} であった．
+\cid{C36}実験コードと出力は公開している\footnote{\url{https://github.com/auto-res2/formal-first-diabetes-regression}}．
+
+\section{結果}
+\label{sec:result}
+
+テストデータに対する MSE は \TestMse\val{testMse} であった．
+\cid{C02}上の実験設定と，下の 3 つの公理が成り立つなら，主張は，この値を 3400 と比べることで検証できる．このことは，実験の前に証明した．
+\cid{C01}\TestMse{} は 3400 を下回らないので，主張は偽である．
+
+この判定は，検証器が無いために信じた，次の 3 つの公理に依存する．
+\cid{C08}Efron らが用いた糖尿病データセットは，配布元の URL から取得したファイルである．
+\cid{C09}実験コードは，宣言を満たす．すなわち，出力に書く値は実際に使った値と得た値であり，データを宣言のとおりに関数へ渡し，宣言していない加工をしない．
+\cid{C10}scikit-learn 1.7.2（NumPy 2.3.4）は信用できる．すなわち，宣言した版と実行環境のもとで，宣言した関数は，同じ入力にいつも同じ値を返す．関数が何を計算するかは主張しない．
+
+\paragraph{研究公正}
+\cid{C34}主張と実験設定の宣言は，実験の実行の後に書き換えていない．\cid{C35}成功した本番の実行は \NFullRuns{} 回で，都合のよい実行だけを選んではいない．
+
+\paragraph{補足}
+目的変数の平均は \TargetMean\val{targetMean}，標準偏差は \TargetStd\val{targetStd} である．
+
+\begin{thebibliography}{9}
+\small
+\bibitem{efron} B. Efron, T. Hastie, I. Johnstone, R. Tibshirani: Least angle regression, Annals of Statistics, 32(2), 407--499, 2004.
+\end{thebibliography}
+
+\end{document}
