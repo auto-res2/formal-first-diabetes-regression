@@ -1,0 +1,849 @@
+{
+  "instruction": "糖尿病データセットに線形回帰モデルを当てはめ，テストデータに対する MSE が 3400 を下回るかを調べる。",
+  "claims": [
+    {
+      "id": "C01",
+      "group": "",
+      "explanation": "比べる量（C03。訓練データに sklearn.linear_model.LinearRegression を当てはめ，テストデータを予測し，sklearn.metrics.mean_squared_error で計算した値）は，3400 を下回る。",
+      "proposition": "abbrev C01 : Prop := specifiedTestMse < 3400",
+      "arguments": [],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "main",
+      "verifier": "Lean"
+    },
+    {
+      "id": "C02",
+      "group": "",
+      "explanation": "C08〜C35 が成り立つなら，メインの claim（C01）は，出力に書かれた MSE を 3400 と比べることで検証できる。\n- 値に関係なく成り立つ。実験の前に，何を確かめれば C01 の真偽が決まるかが確定する\n- 保証するのは，検証のやり方の正しさである。C08〜C35 が実際に成り立つことと，出力に書かれた MSE が 3400 を下回ることは，保証しない\n- C08〜C35 のどれかが成り立たなければ，C01 は真とも偽とも言えない\n- C08，C11，C12 は，C13 を通して使う",
+      "proposition": "abbrev C02 : Prop :=\n  ∀ (specSha256AtRunCommit specSha256AtVerifiedCommit : String) (fullRunTestMses : List ℚ)\n    (trainIndex testIndex : List ℕ) (modelInputXSha256 loadedXSha256 fitInputSha256 trainDataSha256 : String)\n    (observed : RunFacts) (testMse : ℚ),\n  C09 specSha256AtRunCommit specSha256AtVerifiedCommit fullRunTestMses trainIndex testIndex\n    modelInputXSha256 loadedXSha256 fitInputSha256 trainDataSha256 observed testMse →\n  C10 →\n  C13 observed.dataSha256 →\n  C14 observed.nSamples → C15 observed.nFeatures → C16 observed.featureColumns → C17 observed.targetColumn →\n  C18 observed.splitFunction → C19 observed.splitSeed → C20 observed.testFraction → C21 observed.nTest →\n  C22 trainIndex testIndex →\n  C23 observed.fitFunction → C24 observed.predictFunction → C25 observed.mseFunction →\n  C26 observed.usedFeatureCount → C27 modelInputXSha256 loadedXSha256 → C28 fitInputSha256 trainDataSha256 →\n  C29 observed.scikitLearnVersion → C30 observed.numpyVersion →\n  C31 observed.pythonVersion → C32 observed.operatingSystem → C33 observed.cpuArchitecture →\n  C34 specSha256AtRunCommit specSha256AtVerifiedCommit → C35 fullRunTestMses testMse →\n  (C01 ↔ testMse < 3400)",
+      "arguments": [],
+      "proved_in_spec": true,
+      "axiom_in_spec": false,
+      "kind": "verification_method",
+      "verifier": "Lean"
+    },
+    {
+      "id": "C03",
+      "group": "",
+      "explanation": "比べる量は，テストデータの目的変数と予測値に，sklearn.metrics.mean_squared_error を適用した値である。",
+      "proposition": "abbrev C03 : Prop := specifiedTestMse = meanSquaredError testRows target prediction",
+      "arguments": [],
+      "proved_in_spec": true,
+      "axiom_in_spec": false,
+      "kind": "definition",
+      "verifier": "Lean"
+    },
+    {
+      "id": "C04",
+      "group": "",
+      "explanation": "予測値は，当てはめたモデルと各行の説明変数に，sklearn.linear_model.LinearRegression.predict を適用した値である。",
+      "proposition": "abbrev C04 : Prop := ∀ i, prediction i = predict fittedModel (features i)",
+      "arguments": [],
+      "proved_in_spec": true,
+      "axiom_in_spec": false,
+      "kind": "definition",
+      "verifier": "Lean"
+    },
+    {
+      "id": "C05",
+      "group": "",
+      "explanation": "当てはめたモデルは，訓練データの説明変数と目的変数に，sklearn.linear_model.LinearRegression.fit を適用したものである。\n- 説明変数は 10 個すべてを，加工せずに渡す",
+      "proposition": "abbrev C05 : Prop := fittedModel = fit trainRows features target",
+      "arguments": [],
+      "proved_in_spec": true,
+      "axiom_in_spec": false,
+      "kind": "definition",
+      "verifier": "Lean"
+    },
+    {
+      "id": "C06",
+      "group": "",
+      "explanation": "訓練データの行は，テストデータ以外の行である。",
+      "proposition": "abbrev C06 : Prop := trainRows = testRowsᶜ",
+      "arguments": [],
+      "proved_in_spec": true,
+      "axiom_in_spec": false,
+      "kind": "definition",
+      "verifier": "Lean"
+    },
+    {
+      "id": "C07",
+      "group": "",
+      "explanation": "テストデータの行は，sklearn.model_selection.train_test_split を，シード 0，テストデータの割合 1/5 で呼んで返る行である。",
+      "proposition": "abbrev C07 : Prop := testRows = trainTestSplit 0 (1 / 5)",
+      "arguments": [],
+      "proved_in_spec": true,
+      "axiom_in_spec": false,
+      "kind": "definition",
+      "verifier": "Lean"
+    },
+    {
+      "id": "C08",
+      "group": "",
+      "explanation": "Efron ら [1] が用いた糖尿病データセットは，配布元の URL から取得したファイルである。\n- [1] B. Efron, T. Hastie, I. Johnstone, R. Tibshirani. Least angle regression. Annals of Statistics, 2004\n- 値が入った後に，その値に対して公理として宣言する",
+      "proposition": "abbrev C08 (fetchedSha256 : String) : Prop := efronDatasetSha256 = fetchedSha256",
+      "arguments": [
+        {
+          "name": "fetchedSha256",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "axiom",
+      "verifier": null,
+      "unverifiable": "文献が示すファイルを特定する検証器が無い"
+    },
+    {
+      "id": "C09",
+      "group": "",
+      "explanation": "run が実行した commit の実験コードは，その commit の宣言を満たす。\n- この宣言と，この値に当てはめるには，次が要る: 判定に使う宣言がその commit の宣言と同じ（C34），本番の run の MSE が 1 つに決まる（C35），訓練データとテストデータが全件を重なりなく分けている（C22），説明変数を加工していない（C27），当てはめに訓練データを渡している（C28）\n- 出力に書く値は，実行が実際に使った値，実際に得た値である\n- データを定義（C03〜C07）のとおりに関数へ渡し，宣言していない加工をしない\n- 値が入った後に，その値に対して公理として宣言する（任意の値に対して宣言すると，すべての値が等しいことになってしまう）",
+      "proposition": "abbrev C09 (specSha256AtRunCommit specSha256AtVerifiedCommit : String) (fullRunTestMses : List ℚ)\n    (trainIndex testIndex : List ℕ) (modelInputXSha256 loadedXSha256 fitInputSha256 trainDataSha256 : String)\n    (observed : RunFacts) (testMse : ℚ) : Prop :=\n  C34 specSha256AtRunCommit specSha256AtVerifiedCommit → C35 fullRunTestMses testMse →\n  C22 trainIndex testIndex → C27 modelInputXSha256 loadedXSha256 → C28 fitInputSha256 trainDataSha256 →\n  observed = actualFacts ∧ (testMse : ℝ) = actualTestMse ∧ RunWiredAsSpec",
+      "arguments": [
+        {
+          "name": "specSha256AtRunCommit",
+          "type": "String"
+        },
+        {
+          "name": "specSha256AtVerifiedCommit",
+          "type": "String"
+        },
+        {
+          "name": "fullRunTestMses",
+          "type": "List ℚ"
+        },
+        {
+          "name": "trainIndex",
+          "type": "List ℕ"
+        },
+        {
+          "name": "testIndex",
+          "type": "List ℕ"
+        },
+        {
+          "name": "modelInputXSha256",
+          "type": "String"
+        },
+        {
+          "name": "loadedXSha256",
+          "type": "String"
+        },
+        {
+          "name": "fitInputSha256",
+          "type": "String"
+        },
+        {
+          "name": "trainDataSha256",
+          "type": "String"
+        },
+        {
+          "name": "observed",
+          "type": "RunFacts"
+        },
+        {
+          "name": "testMse",
+          "type": "ℚ"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "axiom",
+      "verifier": null,
+      "unverifiable": "コードの振る舞いを判定する検証器が無い"
+    },
+    {
+      "id": "C10",
+      "group": "",
+      "explanation": "scikit-learn 1.7.2（NumPy 2.3.4）は信用できる。\n- 宣言した版と実行環境のもとで，宣言した関数（train_test_split，LinearRegression.fit，LinearRegression.predict，mean_squared_error）は，同じ入力にいつも同じ値を返す。CPU の型番やメモリには依らない\n- Lean に置いた記号（trainTestSplit，fit，predict，meanSquaredError）は，その関数を指す\n- したがって，宣言したデータ・分割・関数・版・実行環境で，定義のとおりに計算した実行が得る MSE は，C03 の量である\n- 関数の中身（何を計算するか）は主張しない",
+      "proposition": "abbrev C10 : Prop := RunUsedDeclared → RunWiredAsSpec → actualTestMse = specifiedTestMse",
+      "arguments": [],
+      "proved_in_spec": false,
+      "axiom_in_spec": true,
+      "kind": "axiom",
+      "verifier": null,
+      "unverifiable": "ライブラリの中身を判定する検証器が無い"
+    },
+    {
+      "id": "C11",
+      "group": "データセット",
+      "explanation": "宣言したデータセットの SHA-256 と，観測したデータセット（artifact にあるデータのファイル）の SHA-256 は，一致する。\n- 宣言した値: 4733febee697862c22139cdac87478a300ce0d101593deb07ed6c0f3328a99cd",
+      "proposition": "abbrev C11 (dataSha256 : String) : Prop := dataSha256 = \"4733febee697862c22139cdac87478a300ce0d101593deb07ed6c0f3328a99cd\"",
+      "arguments": [
+        {
+          "name": "dataSha256",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C12",
+      "group": "データセット",
+      "explanation": "宣言したデータセットの SHA-256 と，配布元の URL から取得したファイルの SHA-256 は，一致する。\n- 配布元の URL: https://www4.stat.ncsu.edu/~boos/var.select/diabetes.tab.txt",
+      "proposition": "abbrev C12 (fetchedSha256 : String) : Prop := fetchedSha256 = \"4733febee697862c22139cdac87478a300ce0d101593deb07ed6c0f3328a99cd\"",
+      "arguments": [
+        {
+          "name": "fetchedSha256",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C13",
+      "group": "データセット",
+      "explanation": "C08（公理），C11，C12 より，Efron ら [1] が用いたデータセットが，観測したデータセットである。",
+      "proposition": "abbrev C13 (dataSha256 : String) : Prop := dataSha256 = efronDatasetSha256",
+      "arguments": [
+        {
+          "name": "dataSha256",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "Lean",
+      "derived": {
+        "theorem": "C13_of_C08_C11_C12",
+        "from": [
+          "C08",
+          "C11",
+          "C12"
+        ]
+      }
+    },
+    {
+      "id": "C14",
+      "group": "データセット",
+      "explanation": "宣言したデータの行数と，観測した行数は，一致する。\n- 宣言した値: 442",
+      "proposition": "abbrev C14 (nSamples : ℕ) : Prop := nSamples = 442",
+      "arguments": [
+        {
+          "name": "nSamples",
+          "type": "ℕ"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C15",
+      "group": "データセット",
+      "explanation": "宣言した説明変数の数と，観測した説明変数の数は，一致する。\n- 宣言した値: 10",
+      "proposition": "abbrev C15 (nFeatures : ℕ) : Prop := nFeatures = 10",
+      "arguments": [
+        {
+          "name": "nFeatures",
+          "type": "ℕ"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C16",
+      "group": "データセット",
+      "explanation": "宣言した説明変数の列名と，観測した列名は，一致する。\n- 宣言した値: AGE，SEX，BMI，BP，S1，S2，S3，S4，S5，S6",
+      "proposition": "abbrev C16 (featureColumns : List String) : Prop := featureColumns = [\"AGE\", \"SEX\", \"BMI\", \"BP\", \"S1\", \"S2\", \"S3\", \"S4\", \"S5\", \"S6\"]",
+      "arguments": [
+        {
+          "name": "featureColumns",
+          "type": "List String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C17",
+      "group": "データセット",
+      "explanation": "宣言した目的変数の列名と，観測した列名は，一致する。\n- 宣言した値: Y",
+      "proposition": "abbrev C17 (targetColumn : String) : Prop := targetColumn = \"Y\"",
+      "arguments": [
+        {
+          "name": "targetColumn",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C18",
+      "group": "分割",
+      "explanation": "宣言した分割の関数と，観測した分割の関数は，一致する。\n- 宣言した値: sklearn.model_selection.train_test_split",
+      "proposition": "abbrev C18 (splitFunction : String) : Prop := splitFunction = \"sklearn.model_selection.train_test_split\"",
+      "arguments": [
+        {
+          "name": "splitFunction",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C19",
+      "group": "分割",
+      "explanation": "宣言した分割の乱数のシードと，観測したシードは，一致する。\n- 宣言した値: 0",
+      "proposition": "abbrev C19 (splitSeed : ℕ) : Prop := splitSeed = 0",
+      "arguments": [
+        {
+          "name": "splitSeed",
+          "type": "ℕ"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C20",
+      "group": "分割",
+      "explanation": "宣言したテストデータの割合と，観測した割合は，一致する。\n- 宣言した値: 1/5",
+      "proposition": "abbrev C20 (testFraction : ℚ) : Prop := testFraction = 1 / 5",
+      "arguments": [
+        {
+          "name": "testFraction",
+          "type": "ℚ"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C21",
+      "group": "分割",
+      "explanation": "宣言したテストデータの件数と，観測した件数は，一致する。\n- 宣言した値: 89（442 件の 1/5 を切り上げた数）",
+      "proposition": "abbrev C21 (nTest : ℕ) : Prop := nTest = 89",
+      "arguments": [
+        {
+          "name": "nTest",
+          "type": "ℕ"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C22",
+      "group": "分割",
+      "explanation": "観測した訓練データの行とテストデータの行は，重ならず，合わせると全 442 件になる。",
+      "proposition": "abbrev C22 (trainIndex testIndex : List ℕ) : Prop :=\n  Disjoint trainIndex.toFinset testIndex.toFinset ∧\n  trainIndex.toFinset ∪ testIndex.toFinset = Finset.range 442",
+      "arguments": [
+        {
+          "name": "trainIndex",
+          "type": "List ℕ"
+        },
+        {
+          "name": "testIndex",
+          "type": "List ℕ"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C23",
+      "group": "当てはめ，予測，評価",
+      "explanation": "宣言した当てはめの関数と，観測した当てはめの関数は，一致する。\n- 宣言した値: sklearn.linear_model.LinearRegression.fit",
+      "proposition": "abbrev C23 (fitFunction : String) : Prop := fitFunction = \"sklearn.linear_model.LinearRegression.fit\"",
+      "arguments": [
+        {
+          "name": "fitFunction",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C24",
+      "group": "当てはめ，予測，評価",
+      "explanation": "宣言した予測の関数と，観測した予測の関数は，一致する。\n- 宣言した値: sklearn.linear_model.LinearRegression.predict",
+      "proposition": "abbrev C24 (predictFunction : String) : Prop := predictFunction = \"sklearn.linear_model.LinearRegression.predict\"",
+      "arguments": [
+        {
+          "name": "predictFunction",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C25",
+      "group": "当てはめ，予測，評価",
+      "explanation": "宣言した MSE の計算の関数と，観測した MSE の計算の関数は，一致する。\n- 宣言した値: sklearn.metrics.mean_squared_error",
+      "proposition": "abbrev C25 (mseFunction : String) : Prop := mseFunction = \"sklearn.metrics.mean_squared_error\"",
+      "arguments": [
+        {
+          "name": "mseFunction",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C26",
+      "group": "当てはめ，予測，評価",
+      "explanation": "宣言した，当てはめに使う説明変数の数と，観測した数は，一致する。\n- 宣言した値: 10（すべての説明変数）",
+      "proposition": "abbrev C26 (usedFeatureCount : ℕ) : Prop := usedFeatureCount = 10",
+      "arguments": [
+        {
+          "name": "usedFeatureCount",
+          "type": "ℕ"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C27",
+      "group": "当てはめ，予測，評価",
+      "explanation": "観測した，モデルに渡した説明変数の SHA-256 は，読み込んだ説明変数の SHA-256 と一致する（加工していない）。",
+      "proposition": "abbrev C27 (modelInputXSha256 loadedXSha256 : String) : Prop := modelInputXSha256 = loadedXSha256",
+      "arguments": [
+        {
+          "name": "modelInputXSha256",
+          "type": "String"
+        },
+        {
+          "name": "loadedXSha256",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C28",
+      "group": "当てはめ，予測，評価",
+      "explanation": "観測した，当てはめに渡したデータの SHA-256 は，訓練データの SHA-256 と一致する。",
+      "proposition": "abbrev C28 (fitInputSha256 trainDataSha256 : String) : Prop := fitInputSha256 = trainDataSha256",
+      "arguments": [
+        {
+          "name": "fitInputSha256",
+          "type": "String"
+        },
+        {
+          "name": "trainDataSha256",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C29",
+      "group": "ライブラリの版",
+      "explanation": "宣言した scikit-learn の版と，観測した版は，一致する。\n- 宣言した値: 1.7.2",
+      "proposition": "abbrev C29 (scikitLearnVersion : String) : Prop := scikitLearnVersion = \"1.7.2\"",
+      "arguments": [
+        {
+          "name": "scikitLearnVersion",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C30",
+      "group": "ライブラリの版",
+      "explanation": "宣言した NumPy の版と，観測した版は，一致する。\n- 宣言した値: 2.3.4",
+      "proposition": "abbrev C30 (numpyVersion : String) : Prop := numpyVersion = \"2.3.4\"",
+      "arguments": [
+        {
+          "name": "numpyVersion",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C31",
+      "group": "実行環境",
+      "explanation": "宣言した Python の版と，観測した版は，一致する。\n- 宣言した値: 3.13.3",
+      "proposition": "abbrev C31 (pythonVersion : String) : Prop := pythonVersion = \"3.13.3\"",
+      "arguments": [
+        {
+          "name": "pythonVersion",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C32",
+      "group": "実行環境",
+      "explanation": "宣言した OS（GitHub Actions の runner の種類）と，観測した OS は，一致する。\n- 宣言した値: ubuntu-24.04",
+      "proposition": "abbrev C32 (operatingSystem : String) : Prop := operatingSystem = \"ubuntu-24.04\"",
+      "arguments": [
+        {
+          "name": "operatingSystem",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C33",
+      "group": "実行環境",
+      "explanation": "宣言した CPU のアーキテクチャと，観測したアーキテクチャは，一致する。\n- 宣言した値: x86_64",
+      "proposition": "abbrev C33 (cpuArchitecture : String) : Prop := cpuArchitecture = \"x86_64\"",
+      "arguments": [
+        {
+          "name": "cpuArchitecture",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C34",
+      "group": "研究公正",
+      "explanation": "判定に使う宣言（このファイル）は，run が実行した commit にあった宣言と同じである。\n- HARKing の検査。run の後に，メインの claim や定義を書き換えていないことを示す\n- 宣言が run より前にあったことも，これに含まれる",
+      "proposition": "abbrev C34 (specSha256AtRunCommit specSha256AtVerifiedCommit : String) : Prop :=\n  specSha256AtRunCommit = specSha256AtVerifiedCommit",
+      "arguments": [
+        {
+          "name": "specSha256AtRunCommit",
+          "type": "String"
+        },
+        {
+          "name": "specSha256AtVerifiedCommit",
+          "type": "String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C35",
+      "group": "研究公正",
+      "explanation": "成功した本番の run は，すべて，同じ MSE を出力している。\n- チェリーピッキングの検査。何度も走らせて，都合のよい run だけを選んでいないことを示す\n- CPU の型番やメモリが違う run で MSE が違えば，C10（公理）が反証される",
+      "proposition": "abbrev C35 (fullRunTestMses : List ℚ) (testMse : ℚ) : Prop := ∀ mse ∈ fullRunTestMses, mse = testMse",
+      "arguments": [
+        {
+          "name": "fullRunTestMses",
+          "type": "List ℚ"
+        },
+        {
+          "name": "testMse",
+          "type": "ℚ"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    },
+    {
+      "id": "C36",
+      "group": "",
+      "explanation": "実験コードと出力は，公開している。\n- リポジトリは public で，実験コード（src/run_experiment.py）を含む",
+      "proposition": "abbrev C36 (repositoryPublic : Bool) (repositoryFiles : List String) : Prop :=\n  repositoryPublic = true ∧ \"src/run_experiment.py\" ∈ repositoryFiles",
+      "arguments": [
+        {
+          "name": "repositoryPublic",
+          "type": "Bool"
+        },
+        {
+          "name": "repositoryFiles",
+          "type": "List String"
+        }
+      ],
+      "proved_in_spec": false,
+      "axiom_in_spec": false,
+      "kind": "",
+      "verifier": "GitHub"
+    }
+  ],
+  "variables": {
+    "dataSha256": {
+      "type": "String",
+      "meaning": "観測したデータセット（artifact にあるデータのファイル）の SHA-256",
+      "verifier": "GitHub",
+      "query": "artifact_file_sha256",
+      "args": {
+        "path": "outputs/data/diabetes.tab.txt"
+      }
+    },
+    "fetchedSha256": {
+      "type": "String",
+      "meaning": "配布元の URL から取得したファイルの SHA-256",
+      "verifier": "GitHub",
+      "query": "artifact_json",
+      "args": {
+        "path": "fetched_urls.json",
+        "key": "https://www4.stat.ncsu.edu/~boos/var.select/diabetes.tab.txt"
+      }
+    },
+    "nSamples": {
+      "type": "ℕ",
+      "meaning": "観測したデータの行数",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "nFeatures": {
+      "type": "ℕ",
+      "meaning": "観測した説明変数の数",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "featureColumns": {
+      "type": "List String",
+      "meaning": "観測した説明変数の列名",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "targetColumn": {
+      "type": "String",
+      "meaning": "観測した目的変数の列名",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "splitFunction": {
+      "type": "String",
+      "meaning": "観測した分割の関数",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "splitSeed": {
+      "type": "ℕ",
+      "meaning": "観測した分割の乱数のシード",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "testFraction": {
+      "type": "ℚ",
+      "meaning": "観測したテストデータの割合",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "nTest": {
+      "type": "ℕ",
+      "meaning": "観測したテストデータの件数",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "trainIndex": {
+      "type": "List ℕ",
+      "meaning": "観測した訓練データの行の番号",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "testIndex": {
+      "type": "List ℕ",
+      "meaning": "観測したテストデータの行の番号",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "fitFunction": {
+      "type": "String",
+      "meaning": "観測した当てはめの関数",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "predictFunction": {
+      "type": "String",
+      "meaning": "観測した予測の関数",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "mseFunction": {
+      "type": "String",
+      "meaning": "観測した MSE の計算の関数",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "usedFeatureCount": {
+      "type": "ℕ",
+      "meaning": "観測した，当てはめに使った説明変数の数",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "modelInputXSha256": {
+      "type": "String",
+      "meaning": "モデルに渡した説明変数の SHA-256",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "loadedXSha256": {
+      "type": "String",
+      "meaning": "読み込んだ説明変数（訓練データの行）の SHA-256",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "fitInputSha256": {
+      "type": "String",
+      "meaning": "当てはめに渡したデータ（説明変数と目的変数）の SHA-256",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "trainDataSha256": {
+      "type": "String",
+      "meaning": "訓練データ（説明変数と目的変数）の SHA-256",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "scikitLearnVersion": {
+      "type": "String",
+      "meaning": "観測した scikit-learn の版",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "numpyVersion": {
+      "type": "String",
+      "meaning": "観測した NumPy の版",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "pythonVersion": {
+      "type": "String",
+      "meaning": "観測した Python の版",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "operatingSystem": {
+      "type": "String",
+      "meaning": "観測した OS（GitHub Actions の runner の種類）",
+      "verifier": "GitHub",
+      "query": "runner_label"
+    },
+    "cpuArchitecture": {
+      "type": "String",
+      "meaning": "観測した CPU のアーキテクチャ",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "testMse": {
+      "type": "ℚ",
+      "meaning": "出力に書かれた，テストデータに対する MSE",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "specSha256AtRunCommit": {
+      "type": "String",
+      "meaning": "run が実行した commit にあった宣言（Spec.lean）の SHA-256",
+      "verifier": "GitHub",
+      "query": "file_sha256_at_run_commit",
+      "args": {
+        "path": "formal/lean/Spec.lean"
+      }
+    },
+    "specSha256AtVerifiedCommit": {
+      "type": "String",
+      "meaning": "判定に使う宣言（Spec.lean）の SHA-256",
+      "verifier": "GitHub",
+      "query": "local_file_sha256",
+      "args": {
+        "path": "formal/lean/Spec.lean"
+      }
+    },
+    "fullRunTestMses": {
+      "type": "List ℚ",
+      "meaning": "成功した run すべての，出力に書かれた MSE",
+      "verifier": "GitHub",
+      "query": "all_runs_experiment_output",
+      "args": {
+        "key": "testMse"
+      }
+    },
+    "repositoryPublic": {
+      "type": "Bool",
+      "meaning": "リポジトリが公開されているか",
+      "verifier": "GitHub",
+      "query": "repository_public"
+    },
+    "repositoryFiles": {
+      "type": "List String",
+      "meaning": "リポジトリのファイル",
+      "verifier": "GitHub",
+      "query": "repository_files"
+    },
+    "cpuModel": {
+      "type": "String",
+      "meaning": "観測した CPU の型番（記録するだけ。claims は無い）",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "memoryGib": {
+      "type": "ℚ",
+      "meaning": "観測したメモリ（GiB。記録するだけ）",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "targetMean": {
+      "type": "ℚ",
+      "meaning": "目的変数の平均（記録するだけ）",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    },
+    "targetStd": {
+      "type": "ℚ",
+      "meaning": "目的変数の標準偏差（n で割る。記録するだけ）",
+      "verifier": "GitHub",
+      "query": "experiment_output"
+    }
+  },
+  "axioms": [
+    "propext",
+    "Classical.choice",
+    "Quot.sound"
+  ]
+}
